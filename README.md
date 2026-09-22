@@ -10,21 +10,15 @@ Each top-level folder is a self-contained skill: drop it into your OpenClaw `ski
 |---|---|---|
 | [`sber-business`](./sber-business) | СберБизнес API: onboarding, Zero-Knowledge Vault (AES-256-GCM + mTLS), notification channels (Telegram/MAX/Discord/Slack/Webhook), balances, payment orders, signing links, bank-stamped PDF statements | [`sber-business@1.0.3`](https://clawhub.ai/skills/sber-business) ✅ |
 | [`smart-storage-triage`](./smart-storage-triage) | Fast local search & storage triage for huge drives and archives: SQLite FTS5 (BM25) full-text index + compressed path-tree snapshots. Returns 3–5 line snippets instead of dumping files — ~95–98 % token savings, with privacy guards and user confirmation before broad indexing | [`smart-storage-triage@1.3.0`](https://clawhub.ai/skills/smart-storage-triage) ✅ |
-| [`a4-text-sheet`](./a4-text-sheet) | Renders school homework and reading sheets as decorated A4 2480×3508 images (plus chat JPEG) and prints them on demand | original |
-| [`academic-doc-formatting`](./academic-doc-formatting) | Formats academic DOCX documents: verified title page layout, branch-specific structure (full papers vs. routine tasks), strict pagination | original |
-| [`clawhub-skill-publish`](./clawhub-skill-publish) | Publishes skills to ClawHub, reads security-scan reports via API and fixes scanner findings (skillspector / llm / vt) | original |
-| [`clawhub-package-publish`](./clawhub-package-publish) | Publishes OpenClaw code plugins to the ClawHub catalog and verifies the released version | original |
-| [`grok-thinking-levels`](./grok-thinking-levels) | Exposes high thinking levels for Grok model ids the xAI plugin still treats as non-thinking | original |
-| [`openclaw-model-setup`](./openclaw-model-setup) | Adds a provider model to OpenClaw with all required entries and unlocks selectable thinking levels | original |
 
-✅ = published on ClawHub (security moderation: **CLEAN**). Install published skills with:
+✅ = published on ClawHub and passed its security moderation (**CLEAN**). Install with:
 
 ```bash
 clawhub install sber-business
 clawhub install smart-storage-triage
 ```
 
-For the original skills — copy the folder into your `skills/` directory.
+Only skills that have passed the ClawHub security audit are mirrored to this repository. New skills join after they clear the same review.
 
 ## Security notes
 
@@ -37,4 +31,4 @@ For the original skills — copy the folder into your `skills/` directory.
 
 ---
 
-*По-русски:* набор скиллов для ИИ-агента OpenClaw. Два из них опубликованы в каталоге ClawHub (`sber-business`, `smart-storage-triage`), остальные — авторские оригиналы. Установка опубликованных: `clawhub install <имя>`, остальные — копированием папки в `skills/`. Лицензия MIT-0.
+*По-русски:* зеркало скиллов для ИИ-агента OpenClaw с каталога ClawHub — сюда попадают только скиллы, прошедшие секьюрити-аудит ClawHub. Сейчас это `sber-business` и `smart-storage-triage`. Установка: `clawhub install <имя>`. Лицензия MIT-0.
