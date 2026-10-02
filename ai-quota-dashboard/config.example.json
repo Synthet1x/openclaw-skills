@@ -2,13 +2,13 @@
   "proxy": "http://127.0.0.1:10808",
   "providers": {
     "openrouter": {
-      "api_key": "sk-or-v1-YOUR_KEY_HERE"
+      "api_key": "***"
     },
     "elevenlabs": {
-      "api_key": "YOUR_ELEVENLABS_KEY_HERE"
+      "api_key": "***"
     },
-    "custom_service": {
-      "session_cookie": "YOUR_SESSION_COOKIE_VALUE_HERE",
+    "custom_gateway": {
+      "api_key": "YOUR_SERVICE_TOKEN_HERE",
       "pinned_domain": "api.service.com"
     }
   }
