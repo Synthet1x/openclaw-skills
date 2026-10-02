@@ -78,6 +78,9 @@
       <p class="text-sm text-gray-400 mt-1" id="last-update">Загрузка данных...</p>
     </div>
     <div class="flex items-center gap-3">
+      <button onclick="openPwaModal()" class="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 font-medium rounded-lg text-sm flex items-center gap-2 transition-all">
+        <span>📱</span> <span>На телефон</span>
+      </button>
       <button onclick="manualRefresh()" id="btn-refresh" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm transition shadow-lg flex items-center gap-2">
         <svg class="w-4 h-4 animate-spin hidden" id="spinner" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
         <span id="btn-text">Обновить данные</span>
@@ -509,5 +512,55 @@
     loadCachedData();
     setInterval(loadCachedData, 30000);
   </script>
+
+  <!-- PWA Install Modal -->
+  <div id="pwa-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-gray-900 border border-gray-700 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+      <button onclick="closePwaModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl">&times;</button>
+      <h3 class="text-xl font-bold text-white flex items-center gap-2 mb-4">
+        <span>📱</span> Установка на телефон (PWA)
+      </h3>
+      <p class="text-sm text-gray-300 mb-4">
+        Вы можете сохранить дашборд как отдельное полноэкранное приложение на рабочий стол без рамок браузера:
+      </p>
+      
+      <div class="space-y-4 text-sm">
+        <div class="p-3 bg-gray-800/80 rounded-xl border border-gray-700/60">
+          <div class="font-semibold text-blue-400 mb-1 flex items-center gap-1.5">
+            <span>🍏</span> iPhone / iPad (Safari)
+          </div>
+          <ol class="list-decimal list-inside text-gray-300 space-y-1">
+            <li>Откройте дашборд в браузере <strong>Safari</strong></li>
+            <li>Нажмите кнопку <strong>«Поделиться»</strong> (квадрат со стрелкой вверх внизу экрана)</li>
+            <li>Пролистайте вниз и выберите <strong>«На экран "Домой"»</strong></li>
+            <li>Нажмите <strong>«Добавить»</strong> в правом верхнем углу</li>
+          </ol>
+        </div>
+
+        <div class="p-3 bg-gray-800/80 rounded-xl border border-gray-700/60">
+          <div class="font-semibold text-green-400 mb-1 flex items-center gap-1.5">
+            <span>🤖</span> Android (Chrome / Яндекс)
+          </div>
+          <ol class="list-decimal list-inside text-gray-300 space-y-1">
+            <li>Откройте дашборд в <strong>Google Chrome</strong></li>
+            <li>Нажмите меню <strong>(три точки)</strong> в правом верхнем углу</li>
+            <li>Выберите <strong>«Установить приложение»</strong> или <strong>«Добавить на главный экран»</strong></li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="mt-6 text-center">
+        <button onclick="closePwaModal()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg text-sm transition-all">
+          Понятно
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openPwaModal() { document.getElementById("pwa-modal").classList.remove("hidden"); }
+    function closePwaModal() { document.getElementById("pwa-modal").classList.add("hidden"); }
+  </script>
 </body>
+
 </html>

@@ -47,7 +47,7 @@ Standard for modern API providers:
 
 ### Pattern C: Web Dashboard Internal Endpoints
 When an official developer endpoint does not expose subscription limits (e.g., consumer web interfaces):
-- The web application queries private internal endpoints (e.g., `https://chat.example.com/backend-api/me` or `/api/subscription/usage`).
+- The web application queries unauthenticated telemetry endpoints (e.g., `https://chat.example.com/backend-api/me` or `/api/subscription/usage`).
 - These rely on a session cookie or ephemeral JWT extracted during login.
 
 ---
@@ -90,7 +90,7 @@ When the subscription has a strict cadence limit (e.g., "50 messages per 3 hours
 
 ### Strategy 3: Local Log Aggregation (Zero-API Fallback)
 When a provider provides zero telemetry endpoints or strictly forbids automated status polling:
-- Aggregate usage directly from local runtime session logs (e.g., OpenClaw session transcripts or local proxy SQLite stores).
+- Aggregate usage directly from local runtime session logs (e.g., local runtime token usage statistics or local proxy SQLite stores).
 - Tally input/output tokens, active turns, and estimated cost locally.
 - Map this usage onto the dashboard card with a "Locally Calculated" badge.
 

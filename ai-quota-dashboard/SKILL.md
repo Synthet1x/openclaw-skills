@@ -18,8 +18,8 @@ To pass automated security audits (`skillspector`, `llm`, `vt`) and safeguard us
    - Credentials must be read strictly from isolated files or environment variables.
 
 2. **Strict Filesystem Isolation (`[PE3]`):**
-   - All credentials files must reside in dedicated directories with restrictive permissions (`chmod 700 ~/.config/ai-quota-dashboard` and `chmod 600 credentials.json`).
-   - Collector scripts must audit permissions and refuse execution if files are world-readable.
+   - All credentials files must reside in dedicated directories with restrictive permissions (`chmod 700 ~/.config/ai-quota-dashboard` and `chmod 600 config.json`).
+   - Collector scripts audit permissions and refuse execution if files are world-readable.
 
 3. **Strict Origin Domain Pinning (`[SQP-2]`, `[E1]`):**
    - Outbound HTTP requests bearing session cookies must enforce strict HTTPS and validate that the request target matches the pinned official provider domain. Requests to mismatched hosts or unverified proxies are rejected.
@@ -31,72 +31,54 @@ For complete specifications and audit scripts, see [references/security-cookie-g
 
 ---
 
-## 2. API Reverse Engineering & Quota Discovery
+## 2. API Reverse Engineering & No-Limit Fallback Strategies
 
 When tracking an AI provider without public usage documentation:
 
 1. **Network Trace Isolation:**
-   - Open the provider web portal in your browser, log in, and open DevTools (`F12`).
+   - Open the provider web portal, log in, and open DevTools (`F12`).
    - Switch to the **Network** tab, filter by `Fetch/XHR`, and refresh the usage or settings view.
-2. **Key Filter Terms:**
    - Filter requests by `quota`, `usage`, `limits`, `subscription`, `billing`, or `models`.
-3. **Analyze Authentication Type:**
-   - **Bearer Access Token:** Check if accompanied by a `refresh_token` endpoint.
-   - **Session Cookie:** Note required headers (`User-Agent`, `Origin`, CSRF tokens).
-4. **Normalize Telemetry:**
-   - Map response fields to: `used`, `limit`, `percent_used`, `unit`, and `resets_at` (ISO 8601 UTC).
 
-For endpoint patterns and examples, see [references/api-reverse-engineering.md](references/api-reverse-engineering.md).
+2. **When Endpoints Lack Explicit Limit Numbers:**
+   - **Unit Economics (Reverse Calculation):** When only account balance is returned (e.g. Perplexity), calculate capacity by dividing balance by request unit price (`remaining = balance / unit_price`).
+   - **Rolling Window Timers:** When limits are time-bound (e.g. 50 msgs / 3 hours), track the cycle start timestamp locally and display an active countdown timer to reset.
+   - **Local Log Aggregation:** When no billing endpoint exists, aggregate usage locally from runtime token usage statistics.
+   - **Session Validity Heartbeat:** For flat-rate/unlimited accounts, verify session validity via lightweight ping (200 OK vs 401/403) and display an active status badge.
 
----
-
-## 3. Setup & Deployment Procedure
-
-### Step 1: Initialize Secure Configuration
-```bash
-# 1. Create directory with restricted permissions
-mkdir -p ~/.config/ai-quota-dashboard
-chmod 700 ~/.config/ai-quota-dashboard
-
-# 2. Copy template and secure credentials file
-cp config.example.json ~/.config/ai-quota-dashboard/config.json
-chmod 600 ~/.config/ai-quota-dashboard/config.json
-```
-
-Populate `~/.config/ai-quota-dashboard/config.json` with your provider keys or extracted session cookies.
-
-### Step 2: Run Telemetry Collection
-```bash
-python3 scripts/quota_collector.py
-```
-Verification: Confirm that `/tmp/ai_quota_cache.json` is generated with valid JSON and non-empty provider arrays.
-
-### Step 3: Run the Dashboard Web Service
-Deploy a lightweight server or systemd service to host `templates/dashboard.html` and serve `/tmp/ai_quota_cache.json` over a local port (e.g., `8885`).
-
-Systemd unit template (`/etc/systemd/system/quota-dashboard.service`):
-```ini
-[Unit]
-Description=AI Quotas & Limits Realtime Dashboard
-After=network.target
-
-[Service]
-Type=simple
-User=%I
-WorkingDirectory=%h/.openclaw/workspace/orli
-ExecStart=/usr/bin/python3 -m http.server 8885 --directory %h/.openclaw/agents/orli/agent/workshop-skills/ai-quota-dashboard/templates
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
+For full reverse-engineering patterns, see [references/api-reverse-engineering.md](references/api-reverse-engineering.md).
 
 ---
 
-## 4. Verification Checklist
+## 3. Deployment & Networking Scenarios
+
+The dashboard supports three operational modes depending on network setup:
+
+1. **Strictly Local LAN (Home / Office Wi-Fi):**
+   - Bind server to `0.0.0.0:8885` and restrict firewall to local subnet (`sudo ufw allow from 192.168.1.0/24 to any port 8885`). Access via `http://<LAN_IP>:8885`.
+2. **Remote Access Without Domain (External IP / VPN):**
+   - Use encrypted WireGuard/Tailscale mesh VPN (zero router ports exposed) or router Port Forwarding with IP restrictions. Alternatively, use free Cloudflare Tunnels (`cloudflared tunnel --url http://127.0.0.1:8885`).
+3. **Custom Domain with HTTPS & Password Protection:**
+   - Nginx reverse proxy with Certbot Let's Encrypt SSL. Enforce Basic Auth (`htpasswd`) so public bots cannot scrape private quota telemetry.
+
+For complete Nginx blocks, firewall rules, and VPN instructions, see [references/networking-deployment.md](references/networking-deployment.md).
+
+---
+
+## 4. Mobile Standalone App (PWA Shortcut)
+
+The dashboard includes full Progressive Web App support to run as a standalone fullscreen app on iOS and Android:
+- **iPhone / iPad (Safari):** Tap the **Share** button (box with upward arrow) -> select **"Add to Home Screen"** -> Tap **"Add"**.
+- **Android (Chrome):** Tap **Menu** (three dots) -> select **"Install app"** or **"Add to Home screen"**.
+
+Launches in fullscreen mode with an app icon and dark theme status bar.
+
+---
+
+## 5. Verification Checklist
 
 - [ ] `config.json` has permissions `0600` (`ls -l ~/.config/ai-quota-dashboard/config.json`).
 - [ ] No tokens or cookies appear in `ps aux` or shell history.
 - [ ] Provider endpoints match pinned domain verification checks.
-- [ ] Telemetry updates periodically and displays clean status indicators in the dashboard.
+- [ ] Dashboard is accessible via LAN IP, VPN, or reverse proxy.
+- [ ] PWA manifest loads cleanly and installs to mobile home screen.
