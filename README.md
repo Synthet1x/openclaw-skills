@@ -9,12 +9,14 @@ Each top-level folder is a self-contained skill: drop it into your OpenClaw `ski
 | Skill | What it does | ClawHub |
 |---|---|---|
 | [`sber-business`](./sber-business) | СберБизнес API: onboarding, Zero-Knowledge Vault (AES-256-GCM + mTLS), notification channels (Telegram/MAX/Discord/Slack/Webhook), balances, payment orders, signing links, bank-stamped PDF statements | [`sber-business@1.0.3`](https://clawhub.ai/skills/sber-business) ✅ |
+| [`ai-quota-dashboard`](./ai-quota-dashboard) | Multi-provider AI quota dashboard with zero-leakage cookie security and API reverse-engineering guide for tracking limits, resets, and token balances (Antigravity, ElevenLabs, OpenRouter, Grok, etc.) | [`ai-quota-dashboard@1.0.0`](https://clawhub.ai/skills/ai-quota-dashboard) ✅ |
 | [`smart-storage-triage`](./smart-storage-triage) | Fast local search & storage triage for huge drives and archives: SQLite FTS5 (BM25) full-text index + compressed path-tree snapshots. Returns 3–5 line snippets instead of dumping files — ~95–98 % token savings, with privacy guards and user confirmation before broad indexing | [`smart-storage-triage@1.3.0`](https://clawhub.ai/skills/smart-storage-triage) ✅ |
 
 ✅ = published on ClawHub and passed its security moderation (**CLEAN**). Install with:
 
 ```bash
 clawhub install sber-business
+clawhub install ai-quota-dashboard
 clawhub install smart-storage-triage
 ```
 
@@ -22,6 +24,7 @@ Only skills that have passed the ClawHub security audit are mirrored to this rep
 
 ## Security notes
 
+- `ai-quota-dashboard` enforces the Zero-Leakage Credential Standard: session cookies and tokens are read strictly from owner-restricted files (`chmod 600`), never passed via CLI arguments (`argv`), and egress is strictly pinned to official HTTPS provider endpoints.
 - `sber-business` keeps all secrets (client certificates, keys, tokens) in AES-256-GCM encrypted vault files; private-key material is passed via `stdin` only, never via CLI arguments. Webhook notification of financial data is HTTPS-only and can mask account numbers/tax IDs.
 - `smart-storage-triage` is strictly local: no network egress, deny-lists for secrets (`.env`, keys), and explicit user confirmation before indexing broad directory trees.
 
