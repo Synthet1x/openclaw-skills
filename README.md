@@ -9,7 +9,7 @@ Each top-level folder is a self-contained skill: drop it into your OpenClaw `ski
 | Skill | What it does | ClawHub |
 |---|---|---|
 | [`sber-business`](./sber-business) | СберБизнес API: onboarding, Zero-Knowledge Vault (AES-256-GCM + mTLS), notification channels (Telegram/MAX/Discord/Slack/Webhook), balances, payment orders, signing links, bank-stamped PDF statements | [`sber-business@1.0.3`](https://clawhub.ai/skills/sber-business) ✅ |
-| [`ai-quota-dashboard`](./ai-quota-dashboard) | Multi-provider AI quota dashboard with zero-leakage cookie security and API reverse-engineering guide for tracking limits, resets, and token balances (Antigravity, ElevenLabs, OpenRouter, Grok, etc.) | [`ai-quota-dashboard@1.0.0`](https://clawhub.ai/skills/ai-quota-dashboard) ✅ |
+| [`ai-quota-dashboard`](./ai-quota-dashboard) | Multi-provider AI quota dashboard with zero-leakage cookie security and API reverse-engineering guide for tracking limits, resets, and token balances (Antigravity, ElevenLabs, OpenRouter, Grok, etc.) | [`ai-quota-dashboard@1.2.2`](https://clawhub.ai/skills/ai-quota-dashboard) ✅ |
 | [`smart-storage-triage`](./smart-storage-triage) | Fast local search & storage triage for huge drives and archives: SQLite FTS5 (BM25) full-text index + compressed path-tree snapshots. Returns 3–5 line snippets instead of dumping files — ~95–98 % token savings, with privacy guards and user confirmation before broad indexing | [`smart-storage-triage@1.3.0`](https://clawhub.ai/skills/smart-storage-triage) ✅ |
 
 ✅ = published on ClawHub and passed its security moderation (**CLEAN**). Install with:
