@@ -297,7 +297,7 @@ def setup_interactive(profile: str = "default", p12_path_str: str | None = None)
         vault._data = data
         vault.save()
 
-        # Безопасное ��даление исходного .p12
+        # Безопасное удаление исходного .p12
         try:
             size = p12_path.stat().st_size
             p12_path.write_bytes(b"\x00" * size)

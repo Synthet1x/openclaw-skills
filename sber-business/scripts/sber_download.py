@@ -40,7 +40,7 @@ def request_statement_print(account: str, date_str: str, api: SberAPI | None = N
             "curl", "-sS", "--max-time", "30",
             "--cert", cert, "--key", key, "--cacert", cacert,
             url,
-            "-H", f"Authorization: Bearer ***}",
+            "Authorization: Bearer " + api.access_token,
         ]
         return subprocess.run(cmd, capture_output=True, text=True)
 
@@ -69,7 +69,7 @@ def poll_download_task(task_id: str, timeout_sec: int = 60, api: SberAPI | None 
                 "curl", "-sS", "--max-time", "15",
                 "--cert", cert, "--key", key, "--cacert", cacert,
                 url,
-                "-H", f"Authorization: Bearer ***}",
+                "Authorization: Bearer " + api.access_token,
             ]
             return subprocess.run(cmd, capture_output=True, text=True)
 
@@ -100,7 +100,7 @@ def download_zip(download_url: str, api: SberAPI | None = None) -> bytes:
             "curl", "-sS", "--max-time", "60",
             "--cert", cert, "--key", key, "--cacert", cacert,
             download_url,
-            "-H", f"Authorization: Bearer ***}",
+            "Authorization: Bearer " + api.access_token,
         ]
         return subprocess.run(cmd, capture_output=True)
 
@@ -113,7 +113,7 @@ def download_zip(download_url: str, api: SberAPI | None = None) -> bytes:
 def fetch_executed_orders(
     date_str: str,
     account: str,
-    out_dir: str = os.path.expanduser("~/media/out"),
+    out_dir: str = "/home/synthet1x/.openclaw/workspace/media/out",
     number: str | None = None,
     profile: str = "default",
 ) -> list[str]:
@@ -157,7 +157,7 @@ def main():
     parser.add_argument("--date", default=datetime.now().strftime("%Y-%m-%d"), help="Дата выписки (YYYY-MM-DD), по умолчанию сегодня")
     parser.add_argument("--account", default=None, help="Расчётный счёт (если не указан, берется из профиля)")
     parser.add_argument("--number", default=None, help="Номер конкретного платёжного поручения (например, 61)")
-    parser.add_argument("--out-dir", default=os.path.expanduser("~/media/out"), help="Папка сохранения")
+    parser.add_argument("--out-dir", default="/home/synthet1x/.openclaw/workspace/media/out", help="Папка сохранения")
 
     args = parser.parse_args()
     api = SberAPI(profile=args.profile)
@@ -167,7 +167,7 @@ def main():
         if accs:
             acc = accs[0]["number"]
         else:
-            print("❌ Ошибка: не указан номер счёта (--account) и в банке не найдено открытых ��четов", file=sys.stderr)
+            print("❌ Ошибка: не указан номер счёта (--account) и в банке не найдено открытых счетов", file=sys.stderr)
             sys.exit(1)
 
     try:

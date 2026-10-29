@@ -1,4 +1,4 @@
-# SberBusiness API (sber-business) v1.0.3
+# SberBusiness API (sber-business) v1.1.0
 
 OpenClaw AgentSkill for official **SberBusiness API** integration: real-time account balances, instant transaction notifications (faster than paid SMS), official MCP payment drafting with signUrl, bank-stamped PDF statement downloads, and local-only Zero-Knowledge Vault onboarding.
 
@@ -73,6 +73,15 @@ The included daemon polls the bank's incremental statement endpoint (`/v2/statem
    python3 scripts/sber_download.py --date 2026-09-19 --number 61
    ```
    Downloads PDF payment orders with the official blue stamp **«ПАО СБЕРБАНК ИСПОЛНЕНО»**.
+5. **Client Secret Rotation (40-day lifecycle):**
+   ```bash
+   python3 scripts/sber_rotate_secret.py --profile default
+   python3 scripts/sber_rotate_secret.py --profile default --dry-run
+   python3 scripts/sber_rotate_secret.py --profile default --json
+   ```
+   Sber fixes the Client Secret lifetime at **exactly 40 days** — it cannot be extended from the cabinet. The bank's own guidance is to rotate it programmatically on day 38. This script calls the official endpoint, atomically rewrites the new secret into the Vault, and re-reads it from disk to confirm.
+
+   ⚠️ **Regenerating the secret in the cabinet invalidates existing refresh tokens.** After a manual regeneration you must obtain a fresh token pair from the portal (`401 UNAUTHORIZED` on the access key, `400 invalid_grant / Unknown refresh_token` on the refresh call). Rotation **through the API** does not have this drawback — verified end-to-end: refresh keeps working afterwards.
 
 ---
 

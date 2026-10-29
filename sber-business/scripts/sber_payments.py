@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Sber Business Payments — поиск ко��трагентов, создание черновиков платёжек и проверка статуса.
+Sber Business Payments — поиск контрагентов, создание черновиков платёжек и проверка статуса.
 Использует официальный промышленный MCP-сервер Sber API:
 https://fintech.sberbank.ru:9443/fintech/api/business-payments/mcp
 
