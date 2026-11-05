@@ -1,0 +1,8 @@
+{
+  "name": "document-worker",
+  "version": "1.0.0",
+  "description": "Универсальный скилл для работы с документами (PDF, Word, Excel)",
+  "main": "document_worker.py",
+  "author": "synthet1x",
+  "license": "MIT"
+}
