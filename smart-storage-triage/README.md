@@ -1,4 +1,4 @@
-# Smart Storage Triage & Search (v1.5.0)
+# Smart Storage Triage & Search (v1.6.0)
 
 Fast, zero-bloat local search and storage triage for AI agents with strict privacy & security guards.
 
@@ -73,6 +73,8 @@ python3 scripts/semantic_media.py index          # incremental, resumable
 python3 scripts/semantic_media.py search "photos of assembled panels" --kind image
 python3 scripts/semantic_media.py status
 ```
+
+**Per-workspace binding (v1.6.0):** to give one agent its own storage and an isolated index, drop a `.smart-storage-triage.json` with the same `media` section at that agent's workspace root (or in the working directory / any ancestor of the skill copy). It overrides the global config key-by-key; first match wins. Use a distinct `db` path per bound workspace so indexes never mix. Workspaces without the file keep the shared default. This file is local infrastructure — never ship it inside the published skill folder.
 
 ---
 

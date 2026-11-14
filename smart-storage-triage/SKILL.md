@@ -4,9 +4,12 @@ description: "Universal smart search and storage triage for codebases, local fil
 allowed-tools: [exec, read]
 ---
 
-# Smart Storage Triage & Search (v1.5.0)
+# Smart Storage Triage & Search (v1.6.0)
 
 Fast, zero-bloat search across code repositories, local folders, documentation, and deep archives. Avoids burning tens of thousands of tokens by querying indexed SQLite FTS5, compressed directory tree snapshots, and a local semantic media index instead of performing blind shell walks (`find` / `grep`).
+
+### What's New in v1.6.0:
+- **Per-workspace storage binding:** a `.smart-storage-triage.json` file (section `media`) in the working directory or in an ancestor directory of the skill copy (up to the workspace root) overrides the shared global config. Each agent workspace can bind its OWN storage root, tree snapshot, and index DB — separate agents get separate, isolated indexes with zero code changes; workspaces without the file keep the shared default.
 
 ### What's New in v1.5.0:
 - **Config-driven semantic media search** bundled as `scripts/semantic_media.py`: any active folder on any storage, configured via the shared config file or env. Multiple agents on one host share one config and one index — install the skill per agent, no reindexing.
@@ -91,6 +94,7 @@ Meaning-based search over **photos, videos, and document names** in a configured
 ```
 - `active` is a prefix relative to `root`; keep archives OUT of it. `""` = whole root.
 - The config and index DB are per-user: several agents on one host share one index. Install the skill into each agent's workspace; no per-agent reindexing.
+- **Per-workspace binding (isolation):** to give one agent its OWN storage and index, put a `.smart-storage-triage.json` with the same `media` section at that agent's workspace root (or anywhere above the skill copy / in the working directory). It overrides the global config key-by-key; the first match wins (CWD first, then the script's ancestors). Use a separate `db` path per bound workspace so indexes never mix. Keep this file OUT of the published skill folder — it is local infrastructure, not skill content.
 
 **Commands:**
 ```bash
@@ -138,4 +142,4 @@ python3 <skill_dir>/scripts/triage_index.py <directory_path> --full
 3. User configuration file `~/.config/smart-storage-triage/config.json`.
 4. Current working directory (`./storage_rag.db`, `./tree.json.gz`).
 
-`semantic_media.py` resolves its `media` config in the same spirit: CLI flags → `STORAGE_MEDIA_*` env → `media` section of the config file → defaults.
+`semantic_media.py` resolves its `media` config in the same spirit: CLI flags → `STORAGE_MEDIA_*` env → workspace-local `.smart-storage-triage.json` (CWD, then the script's ancestor directories) → `media` section of the global config file → defaults.

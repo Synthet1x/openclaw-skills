@@ -19,8 +19,12 @@ Dedup by sha1 (images: full bytes; videos: first 1 MB + size). Incremental:
 resume by size+mtime, errors stored and retried on the next run. The file list
 comes from a gzip tree snapshot — no blind disk walks.
 
-Configuration (resolution order: CLI > env > config file > defaults):
-  ~/.config/smart-storage-triage/config.json, section "media":
+Configuration (resolution order: CLI > env > workspace-local > global config > defaults):
+  Workspace-local binding: .smart-storage-triage.json (section "media") in the
+  current directory or in an ancestor directory of the script copy (up to the
+  workspace root). Lets each agent workspace bind its OWN storage root/tree/db
+  without touching the shared global config; first match wins.
+  Global: ~/.config/smart-storage-triage/config.json, section "media":
     root    — storage root (required), e.g. "/path/to/storage"
     active  — active-folder prefix relative to root, e.g. "ActiveFolder/"
               ("" = whole root; archives must stay OUT of this prefix)
@@ -74,6 +78,26 @@ DB_DIR = None
 ROUTER = None
 
 
+def _local_media_config():
+    """Per-workspace binding file .smart-storage-triage.json (section "media").
+
+    Checked in CWD first, then in the script's ancestor directories (a skill
+    copy lives inside its agent workspace). First match wins; this lets each
+    agent bind its own storage root/tree/db while sharing one global default.
+    """
+    name = ".smart-storage-triage.json"
+    candidates = [Path.cwd() / name]
+    candidates += [p / name for p in Path(__file__).resolve().parents[:4]]
+    for f in candidates:
+        try:
+            if f.is_file():
+                data = json.loads(f.read_text(encoding="utf-8")) or {}
+                return data.get("media", {}) or {}
+        except Exception:
+            continue
+    return {}
+
+
 def resolve_config(args=None):
     global ROOT, ACTIVE_PREFIX, TREE_PATH, DB_PATH, DB_DIR, ROUTER
     cfg = {}
@@ -83,6 +107,9 @@ def resolve_config(args=None):
             cfg = (json.loads(cfg_file.read_text(encoding="utf-8")) or {}).get("media", {}) or {}
         except Exception:
             cfg = {}
+    local = _local_media_config()
+    if local:
+        cfg = {**cfg, **local}
 
     def pick(cli, env, key, default=None):
         v = getattr(args, cli, None) if args is not None else None
