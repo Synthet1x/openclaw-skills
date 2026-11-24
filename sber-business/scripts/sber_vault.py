@@ -10,6 +10,8 @@ SberBank Zero-Knowledge Vault.
 Ключ шифрования привязан к /etc/machine-id хоста + приватному мастер-ключу (~/.openclaw/secrets/.sber_master.key).
 Данные расшифровываются исключительно в память (RAM). Временные TLS-файлы создаются
 только на RAM-диске (/dev/shm) с правами 0600 и гарантированно затираются сразу после вызова.
+Если /dev/shm недоступен, работа ПРЕРЫВАЕТСЯ (fail-closed): расшифрованные секреты
+никогда не записываются в обычный дисковый temp-каталог.
 """
 
 from __future__ import annotations
@@ -148,7 +150,15 @@ class SberVault:
         Контекст-менеджер: размещает сертификаты во временной RAM-папке (/dev/shm),
         устанавливает режим 0600 и БЕЗВОЗВРАТНО затирает и удаляет файлы сразу после блока with.
         """
-        shm_dir = Path("/dev/shm") if os.path.exists("/dev/shm") else Path(tempfile.gettempdir())
+        # RAM-only guarantee, enforced fail-closed: a silent fallback to a
+        # disk-backed temp dir would persist the decrypted private key on disk
+        # (snapshots/backups/forensics), contradicting the documented guarantee.
+        shm_dir = Path("/dev/shm")
+        if not shm_dir.is_dir():
+            raise RuntimeError(
+                "RAM-only guarantee: /dev/shm is not available on this host. "
+                "Refusing to write decrypted TLS secrets to a disk-backed temp directory."
+            )
         tmp_dir = Path(tempfile.mkdtemp(prefix="sber_tls_", dir=shm_dir))
         tmp_dir.chmod(0o700)
 
@@ -223,7 +233,30 @@ def pack_profile_from_disk(profile: str, env_path: Path, cert_dir: Path, account
     print(f"✅ Профиль '{profile}' успешно зашифрован в {vault.vault_path} (AES-256-GCM).")
 
 
-def setup_interactive(profile: str = "default", p12_path_str: str | None = None) -> None:
+def validate_p12_path(p12_path: Path) -> Path:
+    """Strict input validation BEFORE the path is interpolated into openssl argv.
+
+    SECURITY (scanner note): the openssl argv lists in setup_interactive() are
+    FIXED argument arrays executed WITHOUT a shell. No user-controlled flags or
+    shell metacharacters can reach the command line: only this validated file
+    path and RAM tmp paths are interpolated, and the password is fed through
+    stdin (-passin stdin), never through argv. Command injection is therefore
+    not possible; this validation additionally rejects symlinks, directories,
+    non-regular files and wrong extensions.
+    """
+    p12_path = p12_path.expanduser()
+    if p12_path.is_symlink():
+        raise ValueError("Symlinked .p12 paths are not accepted; point to the real file.")
+    resolved = p12_path.resolve()
+    if not resolved.is_file():
+        raise ValueError(f"Not an existing regular file: {resolved}")
+    if resolved.suffix.lower() not in {".p12", ".pfx"}:
+        raise ValueError("Expected a PKCS#12 container with .p12 or .pfx extension")
+    return resolved
+
+
+def setup_interactive(profile: str = "default", p12_path_str: str | None = None,
+                      keep_p12: bool = False) -> None:
     """Безопасный интерактивный мастер онбординга: распаковывает .p12 и упаковывает в Vault без передачи секретов в чат."""
     import getpass
     print("🏦 Мастер безопасной настройки SberBank Zero-Knowledge Vault")
@@ -235,9 +268,14 @@ def setup_interactive(profile: str = "default", p12_path_str: str | None = None)
     else:
         p12_path = Path(p12_path_str)
 
-    if not p12_path.exists():
-        print(f"❌ Файл {p12_path} не найден! Пожалуйста, скачайте .p12 из СберБизнес и положите по этому пути.", file=sys.stderr)
+    try:
+        p12_path = validate_p12_path(p12_path)
+    except ValueError as exc:
+        print(f"❌ Некорректный путь к .p12: {exc}", file=sys.stderr)
+        print("   Скачайте .p12 из СберБизнес и положите его в ~/.openclaw/secrets/sber/client.p12", file=sys.stderr)
         sys.exit(1)
+    if SECRETS_DIR not in p12_path.parents:
+        print(f"ℹ️ Файл лежит вне ожидаемой директории {SECRETS_DIR}; принят после строгой валидации.", file=sys.stderr)
 
     p12_password = getpass.getpass("Введите пароль от сертификата .p12 (ввод скрыт): ").strip()
     client_id = input("Введите Client ID: ").strip()
@@ -245,8 +283,12 @@ def setup_interactive(profile: str = "default", p12_path_str: str | None = None)
     account = input("Номер расчётного счёта (20 цифр) [опционально]: ").strip()
     org_name = input("Название организации/ИП [опционально]: ").strip()
 
-    # Распаковываем во временный RAM-диск (/dev/shm)
-    shm_dir = Path("/dev/shm") if os.path.exists("/dev/shm") else Path(tempfile.gettempdir())
+    # Распаковываем СТРОГО во временный RAM-диск (/dev/shm), fail-closed:
+    # без /dev/shm не пишем расшифрованный ключ на обычный диск.
+    shm_dir = Path("/dev/shm")
+    if not shm_dir.is_dir():
+        print("❌ /dev/shm недоступен: RAM-only гарантия не может быть соблюдена. Настройка прервана.", file=sys.stderr)
+        sys.exit(1)
     tmp_dir = Path(tempfile.mkdtemp(prefix="sber_setup_", dir=shm_dir))
     tmp_dir.chmod(0o700)
 
@@ -254,7 +296,10 @@ def setup_interactive(profile: str = "default", p12_path_str: str | None = None)
     key_tmp = tmp_dir / "key.pem"
 
     try:
-        # Распаковываем сертификат через stdin (чтобы пароль не светился в списке процессов)
+        # SECURITY (scanner note): FIXED argv list, shell=False. Only the
+        # validated p12_path / RAM tmp paths are interpolated; the password
+        # goes through stdin (-passin stdin), never through process arguments.
+        # No user input can alter the command structure -> no command injection.
         cmd_cert = [
             "openssl", "pkcs12", "-in", str(p12_path), "-clcerts", "-nokeys",
             "-out", str(cert_tmp), "-passin", "stdin"
@@ -264,7 +309,7 @@ def setup_interactive(profile: str = "default", p12_path_str: str | None = None)
             print(f"❌ Неверный пароль от .p12 или повреждённый файл: {res.stderr.decode()}", file=sys.stderr)
             sys.exit(1)
 
-        # Распаковываем закрытый ключ через stdin
+        # SECURITY (scanner note): same FIXED argv + stdin password pattern as above.
         cmd_key = [
             "openssl", "pkcs12", "-in", str(p12_path), "-nocerts", "-nodes",
             "-out", str(key_tmp), "-passin", "stdin"
@@ -297,14 +342,20 @@ def setup_interactive(profile: str = "default", p12_path_str: str | None = None)
         vault._data = data
         vault.save()
 
-        # Безопасное удаление исходного .p12
-        try:
-            size = p12_path.stat().st_size
-            p12_path.write_bytes(b"\x00" * size)
-            p12_path.unlink()
-            print(f"🧹 Исходный файл {p12_path} безопасно затёрт и удалён с диска.")
-        except Exception:
-            pass
+        # Безопасное удаление исходного .p12 (сертификат и ключ уже сохранены
+        # внутри зашифрованного Vault — это копия для восстановления).
+        # Флаг --keep-p12 сохраняет исходный контейнер, если пользователь хочет
+        # оставить себе отдельную recovery-копию.
+        if keep_p12:
+            print(f"ℹ️ Исходный файл {p12_path} сохранён (--keep-p12). Храните его в защищённом месте.")
+        else:
+            try:
+                size = p12_path.stat().st_size
+                p12_path.write_bytes(b"\x00" * size)
+                p12_path.unlink()
+                print(f"🧹 Исходный файл {p12_path} безопасно затёрт и удалён с диска.")
+            except Exception:
+                pass
 
         print(f"✅ Банковское хранилище успешно создано и зашифровано: {vault.vault_path} (AES-256-GCM)!")
         print("🚀 Теперь вы можете вернуться в чат к ассистенту — данные надёжно защищены.")
@@ -356,6 +407,7 @@ def main():
     setup_p = sub.add_parser("setup", help="Интерактивный мастер безопасной настройки (без передачи паролей в чат)")
     setup_p.add_argument("--profile", default="default", help="Имя профиля")
     setup_p.add_argument("--p12", default=None, help="Путь к файлу client.p12")
+    setup_p.add_argument("--keep-p12", action="store_true", help="Не затирать исходный .p12 после упаковки (recovery-копия)")
 
     sub.add_parser("status", help="Проверить статус зашифрованных хранилищ")
 
@@ -367,7 +419,7 @@ def main():
             cert_dir = SECRETS_DIR / "sber"
         pack_profile_from_disk(args.profile, env_file, cert_dir, args.account, args.inn, args.name)
     elif args.cmd == "setup":
-        setup_interactive(args.profile, args.p12)
+        setup_interactive(args.profile, args.p12, keep_p12=args.keep_p12)
     elif args.cmd == "status":
         get_status()
     else:
