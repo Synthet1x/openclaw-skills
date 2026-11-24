@@ -19,7 +19,7 @@ metadata:
     - /etc/machine-id (read-only for hardware-bound HKDF key derivation)
 ---
 
-# СберБизнес API (sber-business) v1.2.0
+# СберБизнес API (sber-business) v1.2.1
 
 Защищённый системный скилл для работы со СберБизнес API (набор сервисов «Компаниям»).
 

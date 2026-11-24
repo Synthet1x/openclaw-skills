@@ -360,6 +360,14 @@ def setup_interactive(profile: str = "default", p12_path_str: str | None = None,
         print(f"✅ Банковское хранилище успешно создано и зашифровано: {vault.vault_path} (AES-256-GCM)!")
         print("🚀 Теперь вы можете вернуться в чат к ассистенту — данные надёжно защищены.")
     finally:
+        # Secure cleanup: zero-wipe extracted cert/key material before removal
+        # (same guarantee as ephemeral_tls), then drop the RAM tmp dir.
+        for f in [cert_tmp, key_tmp]:
+            try:
+                if f.exists():
+                    f.write_bytes(b"\x00" * f.stat().st_size)
+            except Exception:
+                pass
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 

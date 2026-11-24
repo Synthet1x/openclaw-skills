@@ -12,12 +12,12 @@ metadata:
     - ~/.local/share/semantic-media/ (local rebuildable index cache)
 ---
 
-# Smart Storage Triage & Search (v1.7.0)
+# Smart Storage Triage & Search (v1.7.1)
 
 Fast, zero-bloat search across code repositories, local folders, documentation, and deep archives. Avoids burning tens of thousands of tokens by querying indexed SQLite FTS5, compressed directory tree snapshots, and a local semantic media index instead of performing blind shell walks (`find` / `grep`).
 
 ### What's New in v1.7.0 (security hardening):
-- **Loopback-only embeddings by default:** the embeddings router must be a loopback endpoint (`127.0.0.1`, `::1`, `localhost`). A non-loopback router is refused unless the operator explicitly passes `--allow-external-router` (or sets `STORAGE_MEDIA_ALLOW_EXTERNAL_ROUTER=1`). An auto-discovered workspace `.smart-storage-triage.json` can NEVER silently redirect private media/query data to an external endpoint.
+- **Loopback-only embeddings by default:** the embeddings router must be a loopback endpoint, verified by parsing IP literals with `ipaddress` (v1.7.1: a hostname like `127.evil.example` is NOT loopback and is refused; only true loopback IPs and the exact name `localhost` pass). A non-loopback router is refused unless the operator explicitly passes `--allow-external-router` (or sets `STORAGE_MEDIA_ALLOW_EXTERNAL_ROUTER=1`). An auto-discovered workspace `.smart-storage-triage.json` can NEVER silently redirect private media/query data to an external endpoint.
 - **Storage-boundary enforcement:** every tree-snapshot path is validated to resolve INSIDE the configured storage root (absolute paths, `..` traversal and symlinks escaping the root are skipped), so a crafted snapshot cannot index out-of-scope files.
 - **Symlink-alias secret exclusion:** the credential denylist is applied to symlink RESOLVED targets as well as alias names — `notes.txt -> .env` inside the root can no longer smuggle secrets into the index (both FTS and semantic layers).
 - **Enforced broad-scope confirmation:** indexing with an empty `active` prefix (whole storage root) now requires explicit confirmation in code: `--allow-broad`, `STORAGE_MEDIA_ALLOW_BROAD=1`, or `allow_broad: true` in the user-owned GLOBAL config (never honored from a discovered workspace file).

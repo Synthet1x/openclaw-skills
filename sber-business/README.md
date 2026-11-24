@@ -1,4 +1,4 @@
-# SberBusiness API (sber-business) v1.2.0
+# SberBusiness API (sber-business) v1.2.1
 
 OpenClaw AgentSkill for official **SberBusiness API** integration: real-time account balances, instant transaction notifications (faster than paid SMS), official MCP payment drafting with signUrl, bank-stamped PDF statement downloads, and local-only Zero-Knowledge Vault onboarding.
 

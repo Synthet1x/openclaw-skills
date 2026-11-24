@@ -1,4 +1,4 @@
-# Smart Storage Triage & Search (v1.7.0)
+# Smart Storage Triage & Search (v1.7.1)
 
 Fast, zero-bloat local search and storage triage for AI agents with strict privacy & security guards.
 

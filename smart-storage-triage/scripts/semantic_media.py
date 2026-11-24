@@ -53,6 +53,7 @@ import argparse
 import base64
 import hashlib
 import io
+import ipaddress
 import json
 import os
 import sqlite3
@@ -148,7 +149,13 @@ def resolve_config(args=None):
               flush=True)
         sys.exit(2)
     host = parts.hostname
-    is_loopback = host == "localhost" or host == "::1" or host.startswith("127.")
+    # Strict loopback test: parse IP literals with ipaddress (a hostname like
+    # "127.evil.example" is NOT loopback even though it starts with "127.");
+    # only the exact name "localhost" is accepted as a non-IP loopback alias.
+    try:
+        is_loopback = ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        is_loopback = host == "localhost"
     allow_ext = bool(getattr(args, "allow_external_router", False)) or \
         os.environ.get("STORAGE_MEDIA_ALLOW_EXTERNAL_ROUTER") == "1"
     if not is_loopback and not allow_ext:

@@ -10,7 +10,7 @@ metadata:
     - user-configured self-hosted gateways (read-only service tokens; loopback/LAN endpoints)
   filesystem-access:
     - ~/.config/ai-quota-dashboard/ (owner-only 0700 dir / 0600 config; collector refuses world-readable files)
-    - /tmp/ai_quota_cache.json (local telemetry cache output)
+    - ~/.local/share/ai-quota-dashboard/cache.json (local telemetry cache, atomic owner-only 0600 write; symlink targets refused)
 ---
 
 # AI Quotas & Subscription Limits Dashboard
@@ -29,10 +29,12 @@ To pass automated security audits (`skillspector`, `llm`, `vt`) and safeguard us
 
 2. **Strict Filesystem Isolation (`[PE3]`):**
    - All credentials files must reside in dedicated directories with restrictive permissions (`chmod 700 ~/.config/ai-quota-dashboard` and `chmod 600 config.json`).
-   - Collector scripts must audit permissions and refuse execution if files are world-readable.
+   - Collector scripts must audit permissions AND ownership on the opened file descriptor (fstat, bound to the read — no TOCTOU window) and refuse execution if files are world-readable or not owned by the current user.
+   - Telemetry output is written atomically (temp + rename) with `0600` permissions; symlink output targets are refused.
 
 3. **Strict Origin Domain Pinning (`[SQP-2]`, `[E1]`):**
    - Outbound HTTP requests bearing authorization headers must enforce strict HTTPS and validate that the request target matches the pinned official provider domain. Requests to mismatched hosts or unverified proxies are rejected.
+   - **Redirects are refused outright:** credential headers are never forwarded to a redirect target (the collector installs a no-redirect handler), so pinning cannot be bypassed by a 3xx chain.
 
 4. **Official Developer Credentials & Service Tokens:**
    - Always prioritize official developer API keys or read-only service tokens configured in your provider/gateway dashboard.
