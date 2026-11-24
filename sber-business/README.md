@@ -1,4 +1,4 @@
-# SberBusiness API (sber-business) v1.2.1
+# SberBusiness API (sber-business) v1.2.2
 
 OpenClaw AgentSkill for official **SberBusiness API** integration: real-time account balances, instant transaction notifications (faster than paid SMS), official MCP payment drafting with signUrl, bank-stamped PDF statement downloads, and local-only Zero-Knowledge Vault onboarding.
 
@@ -6,9 +6,9 @@ OpenClaw AgentSkill for official **SberBusiness API** integration: real-time acc
 
 ## 🔒 Security Architecture (Zero-Knowledge Vault)
 
-1. **Hardware-Bound AES-256-GCM Encryption:**
+1. **Host-Bound AES-256-GCM Encryption:**
    - All banking secrets (`client_id`, `client_secret`, access/refresh tokens, private RSA keys, and mTLS certificates) are encrypted at rest in a binary `.vault` file.
-   - Master key is derived via HKDF (SHA-256) from the host's `/etc/machine-id` and a protected master key file (`0400` permissions).
+   - The encryption key is derived via HKDF (SHA-256) from the host's `/etc/machine-id` and a protected local master key file (`0400` permissions). This is software host-binding, not a hardware secure element: the master key is a local file, so its theft together with the vault and machine-id would compromise the store.
    - Even if disk images or backups are stolen, credentials cannot be decrypted on another machine.
    - Plaintext `.env` files are completely disabled and disallowed.
 2. **Ephemeral RAM-Only TLS & Clean CA Validation (fail-closed):**

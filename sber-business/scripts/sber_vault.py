@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
 SberBank Zero-Knowledge Vault.
-Обеспечивает аппаратное шифрование AES-256-GCM для банковских секретов СберБизнес:
+Обеспечивает шифрование AES-256-GCM с привязкой к хосту для банковских секретов СберБизнес:
 - SBER_CLIENT_ID, SBER_CLIENT_SECRET
 - SBER_ACCESS_TOKEN, SBER_REFRESH_TOKEN
 - Закрытый RSA-ключ клиента (client_key.pem)
 - Клиентский сертификат (client_cert.pem) и цепочка доверия (trust_bundle.pem)
 
 Ключ шифрования привязан к /etc/machine-id хоста + приватному мастер-ключу (~/.openclaw/secrets/.sber_master.key).
+Это программная host-bound защита (не аппаратный secure element): мастер-ключ — локальный файл 0400.
 Данные расшифровываются исключительно в память (RAM). Временные TLS-файлы создаются
 только на RAM-диске (/dev/shm) с правами 0600 и гарантированно затираются сразу после вызова.
 Если /dev/shm недоступен, работа ПРЕРЫВАЕТСЯ (fail-closed): расшифрованные секреты
@@ -40,7 +41,7 @@ MAGIC_HEADER = b"SBERVAULT_V1\x00"
 
 
 def _get_machine_id() -> bytes:
-    """Возвращает аппаратный идентификатор хоста."""
+    """Возвращает идентификатор хоста (machine-id)."""
     for p in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
         if os.path.exists(p):
             try:
@@ -49,7 +50,7 @@ def _get_machine_id() -> bytes:
                     return content
             except Exception:
                 pass
-    raise RuntimeError("Не удалось прочитать аппаратный machine-id хоста")
+    raise RuntimeError("Не удалось прочитать machine-id хоста")
 
 
 def _get_or_create_master_key() -> bytes:
@@ -110,7 +111,7 @@ class SberVault:
             plaintext = aesgcm.decrypt(nonce, ciphertext, MAGIC_HEADER)
         except Exception as exc:
             raise RuntimeError(
-                "Ошибка расшифровки банковского хранилища! Неверный аппаратный ключ или файл подделан."
+                "Ошибка расшифровки банковского хранилища! Неверный ключ хоста или файл подделан."
             ) from exc
 
         self._data = json.loads(plaintext.decode("utf-8"))

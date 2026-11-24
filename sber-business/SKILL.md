@@ -16,10 +16,10 @@ metadata:
   filesystem-access:
     - ~/.openclaw/secrets/ (read/write encrypted AES-256-GCM .vault files)
     - /dev/shm (ephemeral in-memory mTLS certificates for active HTTPS calls, wiped immediately; REQUIRED — fail-closed if absent)
-    - /etc/machine-id (read-only for hardware-bound HKDF key derivation)
+    - /etc/machine-id (read-only for host-bound HKDF key derivation)
 ---
 
-# СберБизнес API (sber-business) v1.2.1
+# СберБизнес API (sber-business) v1.2.2
 
 Защищённый системный скилл для работы со СберБизнес API (набор сервисов «Компаниям»).
 
@@ -46,7 +46,7 @@ metadata:
    ```bash
    python3 <skill_dir>/scripts/sber_vault.py setup
    ```
-   *Мастер локально запросит пароль и Client Secret со скрытым вводом (звёздочками), безопасно через stdin передаст пароль в openssl (без утечки в /proc), прямо в оперативной памяти распакует сертификат, запечатает всё в аппаратный Vault (AES-256-GCM) и удалит исходный открытый `.p12` с диска.*
+   *Мастер локально запросит пароль и Client Secret со скрытым вводом (звёздочками), безопасно через stdin передаст пароль в openssl (без утечки в /proc), прямо в оперативной памяти распакует сертификат, запечатает всё в Vault с привязкой к хосту (AES-256-GCM) и удалит исходный открытый `.p12` с диска.*
 3. После завершения пользователь пишет в чат: *«Готово»*.
 4. ИИ проверяет связь с банком: `python3 <skill_dir>/scripts/sber_api.py summary` и выводит текущий баланс.
 
@@ -70,9 +70,9 @@ metadata:
 
 ## 🔒 БЕЗОПАСНОСТЬ: ZERO-KNOWLEDGE VAULT & RED LINE
 
-1. **Аппаратное шифрование AES-256-GCM:**
+1. **Шифрование AES-256-GCM с привязкой к хосту (host-bound):**
    - Все секреты (`client_id`, `client_secret`, токены, RSA-ключи и сертификаты) хранятся в двоичных файлах `.vault`.
-   - Ключ шифрования привязан к аппаратному `/etc/machine-id` хоста + мастер-ключу `~/.openclaw/secrets/.sber_master.key` (права `0400`).
+   - Ключ шифрования привязан к `/etc/machine-id` хоста + мастер-ключу `~/.openclaw/secrets/.sber_master.key` (права `0400`). Это программная привязка к хосту, а не аппаратный secure element: мастер-ключ — локальный файл, и его утечка вместе с vault-файлом и machine-id скомпрометирует хранилище.
    - На чужом оборудовании или из чужого бэкапа расшифровать данные невозможно.
    - Исходные открытые `.env` файлы не поддерживаются и запрещены: хранение только в шифрованном Vault.
    - Временный TLS создаётся только в RAM (`/dev/shm`) на время сетевого вызова и затирается нулями сразу после него. **RAM-only гарантия enforced fail-closed:** если `/dev/shm` недоступен, скрипты прерываются и НИКОГДА не пишут расшифрованные ключи в обычный дисковый temp-каталог.
